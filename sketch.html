@@ -34,99 +34,31 @@
             series: [{
                 name: '直接访问',
                 type: 'bar',
-                barWidth: '60%',
-                data: [1, 52, 200, 334, 20000, 330, 220]
+                // barWidth: "60%",
+                itemStyle:{
+                    normal: {
+                    barBorderRadius:[13, 13, 0, 0], //[5, 5, 0, 0] //（顺时针左上，右上，右下，左下）
+                  
+                        color: new echarts.graphic.LinearGradient(
+                            0, 0, 0, 1,
+                            [
+                                {offset: 0, color: '#2757f1'},
+                              
+                                {offset: 1, color: '#c1ff94'}
+                            ]
+                        )
+                    }
+                },
+                data: [1, 52, 200, 334, 200, 330, 220]
             }]
         };
 
 
         echartsSoap.registerPreprocessor("innerPieLabelMinPercent","5%");
+        
+        echartsSoap.registerPreprocessor("barShadow",'#3f4b78');
         echartsSoap.registerPreprocessor("barMinHeight",10);
-        echarts.registerPostUpdate(function(model, api) {
-            console.log("registerPostUpdate", model, api);
-            var mergeOption = {
-                series: []
-            }
-            for (var i = model.option.series.length - 1; i >= 0; i--) {
-
-                var series = model.option.series[i],
-                    seriesData = series.data;
-                var mergeData = {
-                    data: []
-                }
-                switch (series.type) {
-                    case "bar":
-                        // series.barMinHeight = 10
-                        break;
-                    case "pie":
-                        // series.label.normal.position = "inner";
-
-
-                        // for (var j = seriesData.length - 1; j >= 0; j--) {
-                        //     // console.log(model._componentsMap._ec_series[i].getDataParams(j).percent);
-                        //     if (model._componentsMap._ec_series[i].getDataParams(j).percent < 4) {
-                        //         // mergeData
-                        //         // seriesData[j].label.normal.show = false;
-                        //         safeNestedObjectInspection(seriesData[j], "label.normal.show", false);
-                        //         safeNestedObjectInspection(seriesData[j], "label.normal.show", "black")
-                        //         mergeData.data.push(echarts.util.extend({
-
-                        //             label: {
-                        //                 normal: {
-                        //                     show: false
-                        //                 }
-                        //             }
-
-                        //         }), series.data[j])
-                        //     } else {
-                        //         mergeData.data.push(echarts.util.extend({}, series.data[j], true));
-                        //     }
-
-                        // }
-
-                        // model._componentsMap._ec_series[i].mergeOption(series,mergeData);
-                        break;
-
-                }
-                mergeOption.series.push(echarts.util.extend(mergeData, series, true))
-
-            }
-            model.setOption(mergeOption)
-            console.log(api.getZr())
-
-            setTimeout(function() {
-                    var ins = echarts.getInstanceByDom(api.getZr().dom);
-                    // ins.resize();
-                    // ins.setOption(mergeOption)
-                }, 0)
-                // ins.resize();
-                // ins.setOption(mergeOption)
-                // echarts.util.each( model.option.series,function(series){
-                //     console.log("registerPostUpdate each series",series.type,series);
-                //        switch(series.type){
-                //         case "bar":
-                //         series.barMinHeight = 10
-                //         break;
-                //         case "pie":
-                //         series.label.normal.position = "inner";
-                //         console.log(model._componentsMap._ec_series[0].getDataParams(0).percent)
-                //         for (var k in model._componentsMap._ec_series[0]){
-                //             console.log(k)
-                //         }
-
-            //         echarts.util.each(model._componentsMap._ec_series[0].ec_dataBeforeProcessed.indices,function(i){
-            //             var params = model._componentsMap._ec_series[0].getDataParams(i);
-            //             console.log(params);
-            //         })
-            //         model._componentsMap._ec_series[0].ec_data._itemLayouts //each .angle
-
-            //         console.log("pie",series)
-            //         break;
-
-            //     }
-            // })
-
-        });
+        
 
         echartsSoap.render("bar_min_height", option);
 

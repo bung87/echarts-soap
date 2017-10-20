@@ -9,7 +9,7 @@
         "barMinHeight":{
             chartType:"bar",
             handle:function(value){
-                return function(){
+                return function(option){
                     this.barMinHeight = value;
                     console.log("handle",this)
                 }
@@ -18,7 +18,7 @@
         "innerPieLabelMinPercent":{
             chartType:"pie",
             handle:function(value){
-                return function(){
+                return function(option){
 
                     if (this.label.normal.position = "inner" || this.label.normal.position == "inside") {
 
@@ -40,20 +40,66 @@
 
                 }
             }
+        },
+        "barShadow":{ //官方示例会将阴影数据显示在tooltip里 http://echarts.baidu.com/demo.html#bar-gradient
+            chartType:"bar",
+            handle:function(value){
+                return function(option){
+
+                    if(typeof this.barWidth !== "undefined"){
+                        console.warn("nothing"); //http://echarts.baidu.com/option.html#series-bar.barWidth
+                    }
+                    var dataMax = this.data.sort(function(a,b){
+                        if(util.isObject(a)){
+                            return a.value - b.value;
+                        }else{
+                            return a - b;
+                        }
+
+                    })[this.data.length - 1] ;
+                    var dataShadow = [];
+                    for (var i = this.data.length - 1; i >= 0; i--) {
+                        dataShadow.push(dataMax);
+                    }
+                    console.log("option",option)
+                    option.series.unshift(
+                        { // For shadow
+                            type: 'bar',
+                            silent:true,
+                            itemStyle: {
+                                normal: {color: value}
+                            },
+                            barWidth:this.barWidth,
+                            barGap:'-100%',
+                            barCategoryGap:'50%',
+                            data: dataShadow,
+                            animation: false,
+                            label:{
+                                normal:{
+                                    show:false
+                                }
+                            },
+                            legendHoverLink:false,
+                            tooltip:{
+                                show:false
+                            }
+                        }
+                    )
+                }
+            }
         }
     };
     echarts.registerPreprocessor(function(option) {
-            echarts.util.each(option.series, function(series) {
-                switch (series.type) {
+            echarts.util.each(option.series, function(seriesOne) {
+                switch (seriesOne.type) {
                     case "bar":
                         echarts.util.each(preprocessors.bar,function(handle){
-                            handle().apply(series);
+                            handle().call(seriesOne,option);
                         });
-                        // series.barMinHeight = 10
                         break;
                     case "pie":
                         echarts.util.each(preprocessors.pie,function(handle){
-                            handle().apply(series);
+                            handle().call(seriesOne,option);
                         });
                        
 
