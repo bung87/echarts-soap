@@ -35,79 +35,13 @@
                 name: '直接访问',
                 type: 'bar',
                 barWidth: '60%',
-                data: [10, 52, 200, 334, 390, 330, 220]
+                data: [1, 52, 200, 334, 20000, 330, 220]
             }]
         };
 
-        function safeNestedObjectInspection(obj, path, value) {
-            //arr title.textStyle.color
-            var arr = path.split("."),
-                len = arr.length,
-                last = len - 1;
-            if (len == 1 && (typeof value == "string" || typeof value == "number")) {
-                var key = arr[0];
-                obj[key] = value;
-            } else {
-                var currPath = [],
-                    curr;
-                for (var index = 0; index < len; index++) {
-                    var key = arr[index];
-                    currPath.push("['" + key + "']");
-                    curr = obj[key];
 
-                    if (index < last) {
-                        if (typeof curr === "undefined") {
-                            // curr = {};
-                            // with(obj){
-
-                            eval("obj" + currPath.join("") + "={};");
-                            // }
-                        }
-                    } else {
-                        // with(obj){
-                        if (typeof value == "string") {
-                            eval("obj" + currPath.join("") + "='" + value + "';");
-                        } else {
-                            eval("obj" + currPath.join("") + "=" + value + ";");
-                        }
-
-                        // }
-                    }
-
-
-                }
-
-            }
-
-            // console.log("safeNestedObjectInspection obj:", obj);
-        }
-        echarts.registerPreprocessor(function(option) {
-            console.log("registerPreprocessor", arguments);
-            echarts.util.each(option.series, function(series) {
-                switch (series.type) {
-                    case "bar":
-                        series.barMinHeight = 10
-                        break;
-                    case "pie":
-                        console.log(series.label.normal.position)
-                        if (series.label.normal.position = "inner" || series.label.normal.position == "inside") {
-                            // series.label.normal.show = false;
-                            amount = echarts.util.reduce(series.data, function(sum, item) {
-                                return sum + item.value;
-                            }, 0)
-                            console.log(amount)
-                            echarts.util.each(series.data, function(item) {
-                                console.log(percent = item.value / amount)
-                                safeNestedObjectInspection(item, "label.normal.show", item.value / amount > parseFloat("3.5%") / 100);
-                            });
-                            console.log("pie", series)
-                        }
-
-                        break;
-
-                }
-            })
-        });
+        echartsSoap.registerPreprocessor("innerPieLabelMinPercent","5%");
+        echartsSoap.registerPreprocessor("barMinHeight",10);
         echarts.registerPostUpdate(function(model, api) {
             console.log("registerPostUpdate", model, api);
             var mergeOption = {
@@ -122,33 +56,33 @@
                 }
                 switch (series.type) {
                     case "bar":
-                        series.barMinHeight = 10
+                        // series.barMinHeight = 10
                         break;
                     case "pie":
                         // series.label.normal.position = "inner";
 
 
-                        for (var j = seriesData.length - 1; j >= 0; j--) {
-                            // console.log(model._componentsMap._ec_series[i].getDataParams(j).percent);
-                            if (model._componentsMap._ec_series[i].getDataParams(j).percent < 4) {
-                                // mergeData
-                                // seriesData[j].label.normal.show = false;
-                                safeNestedObjectInspection(seriesData[j], "label.normal.show", false);
-                                safeNestedObjectInspection(seriesData[j], "label.normal.show", "black")
-                                mergeData.data.push(echarts.util.extend({
+                        // for (var j = seriesData.length - 1; j >= 0; j--) {
+                        //     // console.log(model._componentsMap._ec_series[i].getDataParams(j).percent);
+                        //     if (model._componentsMap._ec_series[i].getDataParams(j).percent < 4) {
+                        //         // mergeData
+                        //         // seriesData[j].label.normal.show = false;
+                        //         safeNestedObjectInspection(seriesData[j], "label.normal.show", false);
+                        //         safeNestedObjectInspection(seriesData[j], "label.normal.show", "black")
+                        //         mergeData.data.push(echarts.util.extend({
 
-                                    label: {
-                                        normal: {
-                                            show: false
-                                        }
-                                    }
+                        //             label: {
+                        //                 normal: {
+                        //                     show: false
+                        //                 }
+                        //             }
 
-                                }), series.data[j])
-                            } else {
-                                mergeData.data.push(echarts.util.extend({}, series.data[j], true));
-                            }
+                        //         }), series.data[j])
+                        //     } else {
+                        //         mergeData.data.push(echarts.util.extend({}, series.data[j], true));
+                        //     }
 
-                        }
+                        // }
 
                         // model._componentsMap._ec_series[i].mergeOption(series,mergeData);
                         break;
@@ -233,7 +167,7 @@
                 label: {
                     normal: {
 
-                        position: 'center'
+                        position: 'inner'
                     }
                 },
 
@@ -247,7 +181,7 @@
             ];
             var legendData = [];
             var seriesData = [];
-            for (var i = 0; i < 50; i++) {
+            for (var i = 0; i < 20; i++) {
                 name = Math.random() > 0.65 ? makeWord(4, 1) + '·' + makeWord(3, 0) : makeWord(2, 1);
                 legendData.push(name);
                 seriesData.push({
