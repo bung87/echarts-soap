@@ -57,13 +57,12 @@
         echartsSoap.registerPreprocessor("innerPieLabelMinPercent","5%");
         
         echartsSoap.registerPreprocessor("barShadow",'#3f4b78');
-        echartsSoap.registerPreprocessor("barMinHeight",10);
-        
+        // echartsSoap.registerPreprocessor("barMinHeight",10);
+        echartsSoap.registerPreprocessor("series.bar.barMinHeight",10);
 
         echartsSoap.render("bar_min_height", option);
 
         var data = genData(50);
-        console.log(data)
         data.seriesData = data.seriesData.concat([{
             value: 335,
             name: '直接访问'

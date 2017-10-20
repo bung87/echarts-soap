@@ -6,20 +6,19 @@
 
     var preprocessors = {
 
-            "bar": [],
-            "pie": []
+            bar: {
+                series:[],
+                data:[]
+            },
+            pie: {
+                series:[],
+                data:[]
+            },
         },
         preprocessorsMap = {
 
-            "barMinHeight": {
-                chartType: "bar",
-                handle: function(value) {
-                    return function(option) {
-                        this.barMinHeight = value;
-                    }
-                }
-            },
             "innerPieLabelMinPercent": {
+                level:"series",
                 chartType: "pie",
                 handle: function(value) {
                     return function(option) {
@@ -42,6 +41,7 @@
             },
             "barShadow": { //官方示例会将阴影数据显示在tooltip里 http://echarts.baidu.com/demo.html#bar-gradient
                 chartType: "bar",
+                level:"series",
                 handle: function(value) {
                     return function(option) {
 
@@ -87,29 +87,60 @@
     echarts.registerPreprocessor(function(option) {
 
         echarts.util.each(option.series, function(seriesOne) {
-
-            switch (seriesOne.type) {
-                case "bar":
-                    echarts.util.each(preprocessors.bar, function(handle) {
+            echarts.util.each(preprocessors[seriesOne.type].series, function(handle) {
                         handle().call(seriesOne, option);
-                    });
-                    break;
-                case "pie":
-                    echarts.util.each(preprocessors.pie, function(handle) {
-                        handle().call(seriesOne, option);
-                    });
+            });
+            echarts.util.each(option.series.data, function(dataOne) {
+                     echarts.util.each(preprocessors[seriesOne.type].data,function(){
+                            handle().call(dataOne, seriesOne.data);
+                     });
+            });
+            // switch (seriesOne.type) {
+            //     case "bar":
+            //         echarts.util.each(preprocessors.bar.series, function(handle) {
+            //             handle().call(seriesOne, option);
+            //         });
+            //         echarts.util.each(option.series.data, function(dataOne) {
+            //              echarts.util.each(preprocessors.bar.data,function(){
+            //                 handle().call(dataOne, seriesOne.data);
+            //              });
+            //         });
+            //         break;
+            //     case "pie":
+            //         echarts.util.each(preprocessors.pie.series, function(handle) {
+            //             handle().call(seriesOne, option);
+            //         });
+            //         echarts.util.each(option.series.data, function(dataOne) {
+            //              echarts.util.each(preprocessors.bar.data,function(){
+            //                 handle().call(dataOne, seriesOne.data);
+            //              });
+            //         });
 
+            //         break;
 
-                    break;
-
-            }
+            // }
         })
     });
 
     function _registerPreprocessor(key, value) {
-
-        var preprocessor = preprocessorsMap[key];
-        preprocessors[preprocessor.chartType].push(preprocessor.handle.bind(null, value));
+        
+        var isContextialKey = -1 !== key.indexOf(".") ? 1 : 0,preprocessor;
+        if(isContextialKey){
+            var args = key.split("."),level = args[0], chartType = args[1],prop = args[2];
+            preprocessor = {
+                chartType:chartType,
+                level:level,
+                handle: function(value) {
+                    return function(option) {
+                        this[prop] = value;
+                    }
+                }
+            }
+        }else{
+            preprocessor = preprocessorsMap[key];
+        }
+        
+        preprocessors[preprocessor.chartType][preprocessor.level].push(preprocessor.handle.bind(null, value));
     }
     util.extend(echartsSoap, {
 
@@ -119,7 +150,7 @@
                 args = Array.prototype.slice.apply(global, arguments, 1);
             args.unshift(dom);
             init = Function.prototype.bind.apply(echarts.init, args);;
-            console.log(init)
+
             if (typeof instance == "undefined") {
                 instance = init(dom);
                 instance.setOption(option);
