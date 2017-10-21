@@ -1,3 +1,9 @@
+/*! * echarts-soap
+* Author:bung
+* Summary: echarts-soap is a handy tool for echarts.
+* Version: beta
+* Github Homepage: https://github.com/bung87/echarts-soap
+*/
 (function(global, echarts) {
 
     var util = echarts.util;
