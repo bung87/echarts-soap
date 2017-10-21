@@ -23,7 +23,7 @@
             },
             xAxis: [{
                 type: 'category',
-                data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                data: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
                 axisTick: {
                     alignWithLabel: true
                 }
@@ -31,6 +31,15 @@
             yAxis: [{
                 type: 'value'
             }],
+                dataZoom: [
+                {
+                    type: 'slider',
+                    show: true,
+                    xAxisIndex: [0],
+                    // start: 1,
+                    // end: 35
+                }
+            ],
             series: [{
                 name: '直接访问',
                 type: 'bar',
@@ -58,6 +67,9 @@
         
         echartsSoap.registerPreprocessor("barShadow",'#3f4b78');
         // echartsSoap.registerPreprocessor("barMinHeight",10);
+        echartsSoap.registerRenderAfter("dataZoomFitWidth",function(dom,orginalOption){
+            return orginalOption.series[0].data.length > 4
+        });
         echartsSoap.registerPreprocessor("bar.series.barMinHeight",10);
 
         echartsSoap.render("bar_min_height", option);

@@ -5,8 +5,9 @@
     global.echartsSoap = echartsSoap = {};
 
     var preprocessors = {
-
+            option:[],
             bar: {
+                option:[],
                 series:[],
                 data:[]
             },
@@ -16,7 +17,15 @@
             },
         },
         preprocessorsMap = {
-
+            "dataZoomFitWidth":{
+                level:"option",
+                chartType:"bar",
+                handle:function(value){
+                    return function(option){
+                        
+                    }
+                }
+            },
             "innerPieLabelMinPercent": {
                 level:"series",
                 chartType: "pie",
@@ -85,42 +94,34 @@
             }
         };
     echarts.registerPreprocessor(function(option) {
-
+        // console.log(this,arguments)
+        // echarts.util.each(preprocessors.bar.option,function(handle){
+        //     handle().call(option,option);
+        // })
         echarts.util.each(option.series, function(seriesOne) {
             echarts.util.each(preprocessors[seriesOne.type].series, function(handle) {
-                        handle().call(seriesOne, option);
+                handle().call(seriesOne, option);
             });
             echarts.util.each(option.series.data, function(dataOne) {
-                     echarts.util.each(preprocessors[seriesOne.type].data,function(){
-                            handle().call(dataOne, seriesOne.data);
-                     });
+                 echarts.util.each(preprocessors[seriesOne.type].data,function(){
+                        handle().call(dataOne, seriesOne.data);
+                 });
             });
-            // switch (seriesOne.type) {
-            //     case "bar":
-            //         echarts.util.each(preprocessors.bar.series, function(handle) {
-            //             handle().call(seriesOne, option);
-            //         });
-            //         echarts.util.each(option.series.data, function(dataOne) {
-            //              echarts.util.each(preprocessors.bar.data,function(){
-            //                 handle().call(dataOne, seriesOne.data);
-            //              });
-            //         });
-            //         break;
-            //     case "pie":
-            //         echarts.util.each(preprocessors.pie.series, function(handle) {
-            //             handle().call(seriesOne, option);
-            //         });
-            //         echarts.util.each(option.series.data, function(dataOne) {
-            //              echarts.util.each(preprocessors.bar.data,function(){
-            //                 handle().call(dataOne, seriesOne.data);
-            //              });
-            //         });
-
-            //         break;
-
-            // }
+       
         })
     });
+    
+    var postProcessors = [],postprocessorMap;
+    
+    function _registerPostprocessor(key,value){
+        postProcessors.push(postprocessorMap[key].bind(null,value))
+    }
+    echarts.registerPostUpdate(function(model, api) {
+        util.each(postProcessors,function(handle){
+            handle()(model,api);
+        })
+            
+    })
 
     function _registerPreprocessor(key, value) {
         
@@ -142,6 +143,37 @@
         
         preprocessors[preprocessor.chartType][preprocessor.level].push(preprocessor.handle.bind(null, value));
     }
+    var renderAfterActionsMap = {
+            dataZoomFitWidth: function( applyConditionFunc) {
+                var userConditionTrue = typeof applyConditionFunc === "undefined"  ;
+                return function(dom, orginalOption) {
+                    
+                    var ec_option = this.getOption(),
+                        option = {
+                            dataZoom:util.extend([],ec_option.dataZoom)
+                        };
+                   
+                    if ( (userConditionTrue || applyConditionFunc.call(this,dom,orginalOption)) && ec_option.series.length > 0 && ec_option.series[0].type == "bar" && ec_option.series[0].data.length ) {
+
+                    var seriesComponent = this.getModel().getSeriesByIndex(0),strWidth =  ec_option.xAxis[0].data.join("").length * ec_option.xAxis[0].axisLabel.fontSize
+                    ,width = seriesComponent.coordinateSystem.grid._rect.width
+                    ,start = 0
+                    ,end = 100;
+                    
+                    if (strWidth > width) {
+                        end = width / strWidth * 100;
+
+                    }
+                   
+                    for (var dataZoomI = 0; dataZoomI < ec_option.dataZoom.length; dataZoomI++) {
+                        option.dataZoom[dataZoomI].start = start;
+                        option.dataZoom[dataZoomI].end = end;
+                    }
+                    this.setOption(option);
+                    }
+                }
+            }
+        },renderAfterActions = [];
     util.extend(echartsSoap, {
 
         render: function(id, option) { //避免初始化多次 http://echarts.baidu.com/api.html#echarts.init 创建一个 ECharts 实例，返回 echartsInstance，不能在单个容器上初始化多个 ECharts 实例。
@@ -160,9 +192,18 @@
                 instance = init(dom); //echarts "3.3.2" 地图instance.setOption(option, true);后指向地图某个区域左侧Visualmap还是初始时的这个区域的值，这里销毁instance重新init.
                 instance.setOption(option);
             }
+            util.each(renderAfterActions,function(handle){
+                handle().call(instance,dom,option);
+            })
+        },
+        registerRenderAfter:function(key,value){
+            renderAfterActions.push(renderAfterActionsMap[key].bind(null,value));
         },
         registerPreprocessor: function(key, value) {
             _registerPreprocessor(key, value);
+        },
+        registerPostprocessor:function(key,value){
+            _registerPostprocessor(key, value);
         }
     })
 
