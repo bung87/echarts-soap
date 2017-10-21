@@ -126,7 +126,7 @@
         
         var isContextialKey = -1 !== key.indexOf(".") ? 1 : 0,preprocessor;
         if(isContextialKey){
-            var args = key.split("."),level = args[0], chartType = args[1],prop = args[2];
+            var args = key.split("."),level = args[1], chartType = args[0],prop = args[2];
             preprocessor = {
                 chartType:chartType,
                 level:level,
