@@ -1,13 +1,6 @@
-<html>
-    <head>
-        <title>demo</title>
-    </head>
-    <div id="bar_min_height" style="width: 400px;height: 300px;float: left;"></div>
-    <div id="pie_min_percent_label" style="width: 400px;height: 300px;float: left;margin-left: 20px;"></div>
-    <script src="https://cdn.bootcss.com/echarts/3.7.2/echarts.js"></script>
-    <script src="echarts-soap.js"></script>
-    <script>
-        option = {
+import echarts from "echarts";
+import echartsSoap from "echarts-soap";
+        var option = {
             color: ['#3398DB'],
             tooltip: {
                 trigger: 'axis',
@@ -92,7 +85,7 @@
             name: '搜索引擎'
         }])
 
-        option2 = {
+        var option2 = {
             tooltip: {
                 trigger: 'item',
                 formatter: "{a} <br/>{b}: {c} ({d}%)"
@@ -161,5 +154,3 @@
         //   instance = echarts.init(dom);//echarts "3.3.2" 地图instance.setOption(option, true);后指向地图某个区域左侧Visualmap还是初始时的这个区域的值，这里销毁instance重新init.
         //   instance.setOption(option);
         // }
-    </script>
-</html>
