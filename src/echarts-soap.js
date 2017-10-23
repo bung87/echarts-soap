@@ -6,13 +6,12 @@
  * Github Homepage: https://github.com/bung87/echarts-soap
  ***/
 
-import echarts from "echarts";
+import echarts from 'echarts';
 
-var util = echarts.util;
+const util = echarts.util;
 
-var echartsSoap = {};
-
-var preprocessors = {
+var echartsSoap = {},
+    preprocessors = {
         option: [],
         bar: {
             option: [],
@@ -25,30 +24,30 @@ var preprocessors = {
         },
     },
     preprocessorsMap = {
-        "dataZoomFitWidth": {
-            level: "option",
-            chartType: "bar",
+        'dataZoomFitWidth': {
+            level: 'option',
+            chartType: 'bar',
             handle: function(value) {
                 return function(option) {
 
                 }
             }
         },
-        "innerPieLabelMinPercent": {
-            level: "series",
-            chartType: "pie",
+        'innerPieLabelMinPercent': {
+            level: 'series',
+            chartType: 'pie',
             handle: function(value) {
                 return function(option) {
 
-                    if (this.label.normal.position = "inner" || this.label.normal.position == "inside") {
+                    if (this.label.normal.position = 'inner' || this.label.normal.position == 'inside') {
 
-                        var amount = echarts.util.reduce(this.data, function(sum, item) {
+                        let amount = echarts.util.reduce(this.data, function(sum, item) {
                             return sum + item.value;
                         }, 0)
 
                         echarts.util.each(this.data, function(item) {
 
-                            safeNestedObjectInspection(item, "label.normal.show", item.value / amount > parseFloat(value) / 100);
+                            safeNestedObjectInspection(item, 'label.normal.show', item.value / amount > parseFloat(value) / 100);
 
                         });
                     }
@@ -56,13 +55,13 @@ var preprocessors = {
                 }
             }
         },
-        "barShadow": { //官方示例会将阴影数据显示在tooltip里 http://echarts.baidu.com/demo.html#bar-gradient
-            chartType: "bar",
-            level: "series",
+        'barShadow': { //官方示例会将阴影数据显示在tooltip里 http://echarts.baidu.com/demo.html#bar-gradient
+            chartType: 'bar',
+            level: 'series',
             handle: function(value) {
                 return function(option) {
 
-                    var dataMax = this.data.sort(function(a, b) {
+                    let dataMax = this.data.sort(function(a, b) {
                         if (util.isObject(a)) {
                             return a.value - b.value;
                         } else {
@@ -70,8 +69,8 @@ var preprocessors = {
                         }
 
                     })[this.data.length - 1];
-                    var dataShadow = [];
-                    for (var i = this.data.length - 1; i >= 0; i--) {
+                    let dataShadow = [];
+                    for (let i = this.data.length - 1; i >= 0; i--) {
                         dataShadow.push(dataMax);
                     }
                     option.series.unshift({ // For shadow
@@ -134,13 +133,10 @@ echarts.registerPostUpdate(function(model, api) {
 
 function _registerPreprocessor(key, value) {
 
-    var isContextialKey = -1 !== key.indexOf(".") ? 1 : 0,
+    var isContextialKey = -1 !== key.indexOf('.') ? 1 : 0,
         preprocessor;
     if (isContextialKey) {
-        var args = key.split("."),
-            level = args[1],
-            chartType = args[0],
-            prop = args[2];
+        var [chartType,level,prop,...rest] = key.split('.'),
         preprocessor = {
             chartType: chartType,
             level: level,
@@ -150,6 +146,7 @@ function _registerPreprocessor(key, value) {
                 }
             }
         }
+        console.log(rest)
     } else {
         preprocessor = preprocessorsMap[key];
     }
@@ -158,7 +155,7 @@ function _registerPreprocessor(key, value) {
 }
 var renderAfterActionsMap = {
         dataZoomFitWidth: function(applyConditionFunc) {
-            var userConditionTrue = typeof applyConditionFunc === "undefined";
+            var userConditionTrue = typeof applyConditionFunc === 'undefined';
             return function(dom, orginalOption) {
 
                 var ec_option = this.getOption(),
@@ -166,10 +163,10 @@ var renderAfterActionsMap = {
                         dataZoom: util.extend([], ec_option.dataZoom)
                     };
 
-                if ((userConditionTrue || applyConditionFunc.call(this, dom, orginalOption)) && ec_option.series.length > 0 && ec_option.series[0].type == "bar" && ec_option.series[0].data.length) {
+                if ((userConditionTrue || applyConditionFunc.call(this, dom, orginalOption)) && ec_option.series.length > 0 && ec_option.series[0].type == 'bar' && ec_option.series[0].data.length) {
 
                     var seriesComponent = this.getModel().getSeriesByIndex(0),
-                        strWidth = ec_option.xAxis[0].data.join("").length * ec_option.xAxis[0].axisLabel.fontSize,
+                        strWidth = ec_option.xAxis[0].data.join('').length * ec_option.xAxis[0].axisLabel.fontSize,
                         width = seriesComponent.coordinateSystem.grid._rect.width,
                         start = 0,
                         end = 100;
@@ -192,19 +189,18 @@ var renderAfterActionsMap = {
 util.extend(echartsSoap, {
 
     render: function(id, option) { //避免初始化多次 http://echarts.baidu.com/api.html#echarts.init 创建一个 ECharts 实例，返回 echartsInstance，不能在单个容器上初始化多个 ECharts 实例。
-        var dom = document.getElementById(id),
+        let dom = document.getElementById(id),
             instance = echarts.getInstanceByDom(dom),
-            args = Array.prototype.slice.apply(global, arguments, 1);
-        args.unshift(dom);
-        var init = Function.prototype.bind.apply(echarts.init, args);;
+            args = Array.prototype.slice.apply(global, arguments, 1).splice(0,0,dom),
+            init = Function.prototype.bind.apply(echarts.init, args);
 
-        if (typeof instance == "undefined") {
+        if (typeof instance == 'undefined') {
             instance = init(dom);
             instance.setOption(option);
         } else {
             echarts.dispose(instance);
 
-            instance = init(dom); //echarts "3.3.2" 地图instance.setOption(option, true);后指向地图某个区域左侧Visualmap还是初始时的这个区域的值，这里销毁instance重新init.
+            instance = init(dom); //echarts '3.3.2' 地图instance.setOption(option, true);后指向地图某个区域左侧Visualmap还是初始时的这个区域的值，这里销毁instance重新init.
             instance.setOption(option);
         }
         util.each(renderAfterActions, function(handle) {
@@ -224,29 +220,29 @@ util.extend(echartsSoap, {
 
 function safeNestedObjectInspection(obj, path, value) {
 
-    var arr = path.split("."),
+    let arr = path.split('.'),
         len = arr.length,
         last = len - 1;
-    if (len == 1 && (typeof value == "string" || typeof value == "number")) {
-        var key = arr[0];
+    if (len == 1 && (typeof value == 'string' || typeof value == 'number')) {
+        let key = arr[0];
         obj[key] = value;
     } else {
-        var currPath = [],
+        let currPath = [],
             curr;
-        for (var index = 0; index < len; index++) {
-            var key = arr[index];
-            currPath.push("['" + key + "']");
+        for (let index = 0; index < len; index++) {
+            let key = arr[index];
+            currPath.push(`['{$key}']`);
             curr = obj[key];
 
             if (index < last) {
-                if (typeof curr === "undefined") {
-                    eval("obj" + currPath.join("") + "={};");
+                if (typeof curr === 'undefined') {
+                    eval('obj' + currPath.join('') + '={};');
                 }
             } else {
-                if (typeof value == "string") {
-                    eval("obj" + currPath.join("") + "='" + value + "';");
+                if (typeof value == 'string') {
+                    eval('obj' + currPath.join('') + '=' + value + ';');
                 } else {
-                    eval("obj" + currPath.join("") + "=" + value + ";");
+                    eval('obj' + currPath.join('') + '=' + value + ';');
                 }
             }
         }
