@@ -32,7 +32,7 @@ echartsSoap 为UMD封装，script标签直接引入会在window下暴露 `echart
 #### `echartsSoap.registerPreprocessor (key , value)`
 注册处理器，`key` 可以是`echartsSoap`已经预置的处理器,也可以是通过`echartsSoap.extendPreprocessorsMap`扩展而来的处理器，或者是像demo.js中的'bar.series.barMinHeight'包含<series.type>.<迭代层级>.<属性>三部分，其中**迭代层级**除了series,还可以是data,表示在迭代过程中想要调整每个series或每个data里的单个元素的哪个属性。
 
-`value`可以是基本类型或者Object,Array根据类型不同采用直接赋值或者｀echarts.util.extend｀
+`value`可以是基本类型或者Object,Array根据类型不同采用直接赋值或者`echarts.util.extend`
 
 #### `echartsSoap.registerRenderAfter (key, value)`
 有些操作需要渲染之后才能有效执行(至少从官方文档很难获取需要的变量)，比如预置的`dataZoomFitWidth`，将根据容器宽度调整dataZoom结束位置，避免出现显示的柱状条很多而分类轴受限于label文字长度只能展示少量的label。  
@@ -41,12 +41,12 @@ echartsSoap 为UMD封装，script标签直接引入会在window下暴露 `echart
 
 
 #### `echartsSoap.traverse (option, key , value)`
-option 在传入echarts构造器之前你可以通过此方法调整将要传入给echarts构造器的option进行修改，`key` `value`规则同 `echartsSoap.registerPreprocessor (key , value)`
+option 在传入echarts构造器之前你可以通过此方法调整将要传入给echarts构造器的option进行修改，`key` `value`规则同 `echartsSoap.registerPreprocessor (key , value)`,
 你可以传入**Preprocessor**因为跟**Preprocessor**一样，此时echarts还没有渲染。不同的是这里修改的是将要生成的单个实例的option。
 
 #### `echartsSoap.extendPreprocessorsMap (obj)`
 
-接受一个对象来扩展**PreprocessorsMap**,<preprocessorName>为自定义的名称，即`echartsSoap.registerPreprocessor`时传入的`key`
+接受一个对象来扩展**PreprocessorsMap**,<preprocessorName>为自定义的名称，即`echartsSoap.registerPreprocessor`时传入的`key`  
 `chartType` 将要应用的series类型  
 `level` **迭代层级**  
 `handle` 处理逻辑  
