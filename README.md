@@ -37,7 +37,7 @@ echartsSoap 为UMD封装，script标签直接引入会在window下暴露 `echart
 #### `echartsSoap.registerRenderAfter (key, value)`
 有些操作需要渲染之后才能有效执行(至少从官方文档很难获取需要的变量)，比如预置的`dataZoomFitWidth`，将根据容器宽度调整dataZoom结束位置，避免出现显示的柱状条很多而分类轴受限于label文字长度只能展示少量的label。  
 
-｀value｀ 目前是根据不同需要采用不同的类型，比如`dataZoomFitWidth` 接受一个回调函数作为`value`,返回一个bool值以决定是否应用此处理器，回调函数的上下文为 echartsInstance, 参数为dom, orginalOption。
+`value` 目前是根据不同需要采用不同的类型，比如`dataZoomFitWidth` 接受一个回调函数作为`value`,返回一个bool值以决定是否应用此处理器，回调函数的上下文为 echartsInstance, 参数为dom, orginalOption。
 
 
 #### `echartsSoap.traverse (option, key , value)`
