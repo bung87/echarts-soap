@@ -4,7 +4,7 @@
   "description": "![before preview](echarts-soap1.jpg)",
   "main": "echarts-soap.js",
   "scripts": {
-    "dist": "webpack --config webpack.config.pro.js --env prod;webpack --config webpack.config.pro.js",
+    "dist": "webpack --env.prod --config webpack.config.pro.js ;webpack --env.min --config webpack.config.pro.js",
     "start": "webpack-dev-server --open",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -25,8 +25,7 @@
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "webpack": "^3.8.1",
-    "webpack-dev-server": "^2.9.3",
-    "yargs": "^9.0.1"
+    "webpack-dev-server": "^2.9.3"
   },
   "dependencies": {
     "echarts": "^3.7.2"
