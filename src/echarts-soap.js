@@ -12,9 +12,9 @@ const util = echarts.util;
 
 var echartsSoap = {},
     preprocessors = {
-        option: [],
+        // option: [],
         bar: {
-            option: [],
+            // option: [],
             series: [],
             data: []
         },
@@ -24,15 +24,6 @@ var echartsSoap = {},
         },
     },
     preprocessorsMap = {
-        'dataZoomFitWidth': {
-            level: 'option',
-            chartType: 'bar',
-            handle: function(value) {
-                return function(option) {
-
-                }
-            }
-        },
         'innerPieLabelMinPercent': {
             level: 'series',
             chartType: 'pie',
@@ -142,11 +133,15 @@ function _registerPreprocessor(key, value) {
             level: level,
             handle: function(value) {
                 return function(option) {
-                    this[prop] = value;
+                    if(util.isObject(value)){
+                        util.extend(this,value,true);
+                    }else{
+                        this[prop] = value;
+                    }
+                    
                 }
             }
         }
-        console.log(rest)
     } else {
         preprocessor = preprocessorsMap[key];
     }
@@ -215,6 +210,46 @@ util.extend(echartsSoap, {
     },
     registerPostprocessor: function(key, value) {
         _registerPostprocessor(key, value);
+    },
+    extendPreprocessorsMap:function(obj){
+        util.extend(extendPreprocessorsMap,obj);
+    },
+    traverse:function(option,key,value){
+        var isContextialKey = -1 !== key.indexOf('.') ? 1 : 0,
+        processor;
+        if (isContextialKey) {
+            var [chartType,level,prop,...rest] = key.split('.'),
+            processor = {
+                chartType: chartType,
+                level: level,
+                handle: function(value) {
+                    return function(option) {
+                        if(util.isObject(value)){
+                            util.extend(this,value,true);
+                        }else{
+                            this[prop] = value;
+                        }
+                    }
+                }
+            }
+        } else {
+            processor = preprocessorsMap[key];
+        }
+        echarts.util.each(option.series, function(seriesOne) {
+            if(!seriesOne.type === processor.processor) return;
+            
+                if(processor.level == 'series')
+                processor.handle(value).call(seriesOne, option);
+
+            echarts.util.each(seriesOne.data, function(dataOne) {
+                
+                if(processor.level == 'data')
+                processor.handle(value).call(dataOne, seriesOne.data);
+
+            });
+    
+        })
+
     }
 })
 

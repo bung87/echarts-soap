@@ -84,8 +84,8 @@ import echartsSoap from 'echarts-soap';
 
         echartsSoap.registerPreprocessor('innerPieLabelMinPercent','5%');
         
-        echartsSoap.registerPreprocessor('barShadow','#3f4b78');
-        // echartsSoap.registerPreprocessor('barMinHeight',10);
+        // echartsSoap.registerPreprocessor('barShadow','#3f4b78');
+        echartsSoap.traverse(option ,'barShadow','#3f4b78');
         echartsSoap.registerRenderAfter('dataZoomFitWidth',function(dom,orginalOption){
             return orginalOption.series[0].data.length > 4
         });
