@@ -46,7 +46,7 @@ option 在传入echarts构造器之前你可以通过此方法调整将要传入
 
 #### `echartsSoap.extendPreprocessorsMap (obj)`
 
-接受一个对象来扩展**PreprocessorsMap**,<preprocessorName>为自定义的名称，即`echartsSoap.registerPreprocessor`时传入的`key`  
+接受一个对象来扩展**PreprocessorsMap**,`preprocessorName`为自定义的名称，即`echartsSoap.registerPreprocessor`时传入的`key`  
 `chartType` 将要应用的series类型  
 `level` **迭代层级**  
 `handle` 处理逻辑  
