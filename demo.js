@@ -90,7 +90,21 @@ import echartsSoap from 'echarts-soap';
             return orginalOption.series[0].data.length > 4
         });
         echartsSoap.registerPreprocessor('bar.series.barMinHeight',10);
-
+        echartsSoap.registerPreprocessor('pie.data.tooltip',{
+            formatter: function (params) {
+                console.log(params);
+                var html = "";
+            
+                var element = params, resultValue = "";
+      
+                  resultValue = isNaN(element.value) ? 0 : String(element.value);
+                
+              
+                html += '<div style="background:' + element.color + ';width:8px;height:8px;border-radius:8px;display:inline-block;margin-right:3px;"></div>' +
+                  element.name + '：' + ( resultValue + (typeof axisName !== "undefined" ? axisName : "" ) );
+                return html;
+              }
+        });
         echartsSoap.render('bar_min_height', option);
 
         function genData(count) {

@@ -109,8 +109,8 @@ echarts.registerPreprocessor(function(option) {
         echarts.util.each(preprocessors[seriesOne.type].series, function(handle) {
             handle().call(seriesOne, option);
         });
-        echarts.util.each(option.series.data, function(dataOne) {
-            echarts.util.each(preprocessors[seriesOne.type].data, function() {
+        echarts.util.each(seriesOne.data, function(dataOne) {
+            echarts.util.each(preprocessors[seriesOne.type].data, function(handle) {
                 handle().call(dataOne, seriesOne.data);
             });
         });
