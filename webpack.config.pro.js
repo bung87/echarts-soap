@@ -3,11 +3,8 @@ const webpack = require('webpack');
 const UglifyJsPlugin = webpack.optimize.UglifyJsPlugin;
 const vendorsPath = path.resolve('./node_modules');
 
-var plugins = [];
-
-
-
 module.exports =  env => {
+    var plugins = [];
     if (env.min) {
         plugins.push(new UglifyJsPlugin({ minimize: false }));
         // outputFile = projectName + '.min.js';
@@ -22,8 +19,8 @@ module.exports =  env => {
             path: path.resolve(__dirname, 'dist'),
             filename: env.min ? 'echarts-soap.min.js' : 'echarts-soap.js',
             library: ['echartsSoap'],
-            libraryTarget: 'umd',
-            sourceMapFilename:'echarts-soap.min.js.map'
+            libraryTarget: 'umd'
+            // sourceMapFilename:'echarts-soap.min.js.map'
         },
         externals: {
             echarts: 'echarts'

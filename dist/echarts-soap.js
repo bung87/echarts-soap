@@ -421,4 +421,4 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_2__;
 /***/ })
 /******/ ]);
 });
-//# sourceMappingURL=echarts-soap.min.js.map
+//# sourceMappingURL=echarts-soap.js.map
