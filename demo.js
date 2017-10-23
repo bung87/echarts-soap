@@ -92,7 +92,6 @@ import echartsSoap from 'echarts-soap';
         echartsSoap.registerPreprocessor('bar.series.barMinHeight',10);
         echartsSoap.registerPreprocessor('pie.data.tooltip',{
             formatter: function (params) {
-                console.log(params);
                 var html = "";
             
                 var element = params, resultValue = "";
@@ -101,7 +100,7 @@ import echartsSoap from 'echarts-soap';
                 
               
                 html += '<div style="background:' + element.color + ';width:8px;height:8px;border-radius:8px;display:inline-block;margin-right:3px;"></div>' +
-                  element.name + '：' + ( resultValue + (typeof axisName !== "undefined" ? axisName : "" ) );
+                  element.name + '：' + ( resultValue + ' ' + element.percent + '%' );
                 return html;
               }
         });
