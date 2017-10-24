@@ -1,19 +1,24 @@
 const path = require('path');
 const webpack = require('webpack');
-const UglifyJsPlugin = webpack.optimize.UglifyJsPlugin;
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin')
 const vendorsPath = path.resolve('./node_modules');
 
 module.exports =  env => {
     var plugins = [];
     if (env.min) {
-        plugins.push(new UglifyJsPlugin({ minimize: false }));
-        // outputFile = projectName + '.min.js';
+        plugins.push(new UglifyJSPlugin({
+            sourceMap:true
+        }));
+        plugins.push(new webpack.SourceMapDevToolPlugin({
+            test: /\.min\.js$/,
+            filename:'echarts-soap.min.js.map'
+        }));
     }
     return {
         entry: {
             echartsSoap: './src/echarts-soap.js'
         },
-        devtool: 'source-map',
+        // devtool: env.min ? 'cheap-source-map' : false,
 
         output: {
             path: path.resolve(__dirname, 'dist'),
