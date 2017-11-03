@@ -102,7 +102,9 @@ var util = _echarts2.default.util;
 
 var echartsSoap = {},
     preprocessors = {
-    // option: [],
+    '*': {
+        option: []
+    },
     bar: {
         // option: [],
         series: [],
@@ -113,6 +115,8 @@ var echartsSoap = {},
         data: []
     }
 },
+    processors = Object.assign({}, preprocessors),
+    processorsMap = {},
     preprocessorsMap = {
     'innerPieLabelMinPercent': {
         level: 'series',
@@ -178,17 +182,69 @@ var echartsSoap = {},
         }
     }
 };
+
 _echarts2.default.registerPreprocessor(function (option) {
-    // console.log(this,arguments)
-    // echarts.util.each(preprocessors.bar.option,function(handle){
-    //     handle().call(option,option);
-    // })
+
     _echarts2.default.util.each(option.series, function (seriesOne) {
         _echarts2.default.util.each(preprocessors[seriesOne.type].series, function (handle) {
             handle().call(seriesOne, option);
         });
         _echarts2.default.util.each(seriesOne.data, function (dataOne) {
             _echarts2.default.util.each(preprocessors[seriesOne.type].data, function (handle) {
+                handle().call(dataOne, seriesOne.data);
+            });
+        });
+    });
+});
+
+function getProcessorByKey(key, map) {
+    var isContextialKey = -1 !== key.indexOf('.') ? 1 : 0,
+        processor;
+    if (isContextialKey) {
+        var _key$split = key.split('.'),
+            _key$split2 = _toArray(_key$split),
+            chartType = _key$split2[0],
+            level = _key$split2[1],
+            prop = _key$split2[2],
+            rest = _key$split2.slice(3),
+            processor = {
+            chartType: chartType,
+            level: level,
+            handle: function handle(value) {
+                return function (option) {
+                    if (util.isObject(value)) {
+                        util.extend(this, value, true);
+                    } else {
+                        this[prop] = value;
+                    }
+                };
+            }
+        };
+    } else {
+        processor = map[key];
+    }
+    return processor;
+}
+
+function _registerProcessor(key, value) {
+
+    var processor = getProcessorByKey(key, processorsMap);
+
+    processors[processor.chartType][processor.level].push(processor.handle.bind(null, value));
+}
+
+_echarts2.default.registerProcessor(function (ecModel, api) {
+    var dom = api.getDom(),
+        instance = _echarts2.default.getInstanceByDom(dom);
+    _echarts2.default.util.each(processors['*']['option'], function (handle) {
+        handle().call(instance, ecModel, api);
+    });
+    _echarts2.default.util.each(ecModel.option.series, function (seriesOne) {
+        _echarts2.default.util.each(processors[seriesOne.type].series, function (handle) {
+            handle().call(seriesOne, ecModel.option);
+        });
+        _echarts2.default.util.each(seriesOne.data, function (dataOne) {
+            _echarts2.default.util.each(processors[seriesOne.type].data, function (handle) {
                 handle().call(dataOne, seriesOne.data);
             });
         });
@@ -209,32 +265,7 @@ _echarts2.default.registerPostUpdate(function (model, api) {
 
 function _registerPreprocessor(key, value) {
 
-    var isContextialKey = -1 !== key.indexOf('.') ? 1 : 0,
-        preprocessor;
-    if (isContextialKey) {
-        var _key$split = key.split('.'),
-            _key$split2 = _toArray(_key$split),
-            chartType = _key$split2[0],
-            level = _key$split2[1],
-            prop = _key$split2[2],
-            rest = _key$split2.slice(3),
-            preprocessor = {
-            chartType: chartType,
-            level: level,
-            handle: function handle(value) {
-                return function (option) {
-                    if (util.isObject(value)) {
-                        util.extend(this, value, true);
-                    } else {
-                        this[prop] = value;
-                    }
-                };
-            }
-        };
-    } else {
-        preprocessor = preprocessorsMap[key];
-    }
-
+    var preprocessor = getProcessorByKey(key, preprocessorsMap);
     preprocessors[preprocessor.chartType][preprocessor.level].push(preprocessor.handle.bind(null, value));
 }
 var renderAfterActionsMap = {
@@ -297,6 +328,9 @@ util.extend(echartsSoap, {
     registerPreprocessor: function registerPreprocessor(key, value) {
         _registerPreprocessor(key, value);
     },
+    registerProcessor: function registerProcessor(key, value) {
+        _registerProcessor(key, value);
+    },
     registerPostprocessor: function registerPostprocessor(key, value) {
         _registerPostprocessor(key, value);
     },
@@ -314,31 +348,7 @@ util.extend(echartsSoap, {
         util.extend(extendPreprocessorsMap, obj);
     }),
     traverse: function traverse(option, key, value) {
-        var isContextialKey = -1 !== key.indexOf('.') ? 1 : 0,
-            processor;
-        if (isContextialKey) {
-            var _key$split3 = key.split('.'),
-                _key$split4 = _toArray(_key$split3),
-                chartType = _key$split4[0],
-                level = _key$split4[1],
-                prop = _key$split4[2],
-                rest = _key$split4.slice(3),
-                processor = {
-                chartType: chartType,
-                level: level,
-                handle: function handle(value) {
-                    return function (option) {
-                        if (util.isObject(value)) {
-                            util.extend(this, value, true);
-                        } else {
-                            this[prop] = value;
-                        }
-                    };
-                }
-            };
-        } else {
-            processor = preprocessorsMap[key];
-        }
+        var processor = getProcessorByKey(key, preprocessorsMap);
         _echarts2.default.util.each(option.series, function (seriesOne) {
             if (!seriesOne.type === processor.processor) return;
 
