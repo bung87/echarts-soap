@@ -12,7 +12,9 @@ const util = echarts.util;
 
 var echartsSoap = {},
     preprocessors = {
-        // option: [],
+        '*':{
+            option:[]
+        },
         bar: {
             // option: [],
             series: [],
@@ -23,20 +25,23 @@ var echartsSoap = {},
             data: []
         },
     },
+    processors = Object.assign({}, preprocessors),
+    processorsMap = {
+    },
     preprocessorsMap = {
         'innerPieLabelMinPercent': {
             level: 'series',
             chartType: 'pie',
-            handle: function(value) {
-                return function(option) {
+            handle: function (value) {
+                return function (option) {
 
                     if (this.label.normal.position = 'inner' || this.label.normal.position == 'inside') {
 
-                        let amount = echarts.util.reduce(this.data, function(sum, item) {
+                        let amount = echarts.util.reduce(this.data, function (sum, item) {
                             return sum + item.value;
                         }, 0)
 
-                        echarts.util.each(this.data, function(item) {
+                        echarts.util.each(this.data, function (item) {
 
                             safeNestedObjectInspection(item, 'label.normal.show', item.value / amount > parseFloat(value) / 100);
 
@@ -49,10 +54,10 @@ var echartsSoap = {},
         'barShadow': { //官方示例会将阴影数据显示在tooltip里 http://echarts.baidu.com/demo.html#bar-gradient
             chartType: 'bar',
             level: 'series',
-            handle: function(value) {
-                return function(option) {
+            handle: function (value) {
+                return function (option) {
 
-                    let dataMax = this.data.sort(function(a, b) {
+                    let dataMax = this.data.sort(function (a, b) {
                         if (util.isObject(a)) {
                             return a.value - b.value;
                         } else {
@@ -91,17 +96,65 @@ var echartsSoap = {},
             }
         }
     };
-echarts.registerPreprocessor(function(option) {
-    // console.log(this,arguments)
-    // echarts.util.each(preprocessors.bar.option,function(handle){
-    //     handle().call(option,option);
-    // })
-    echarts.util.each(option.series, function(seriesOne) {
-        echarts.util.each(preprocessors[seriesOne.type].series, function(handle) {
+
+echarts.registerPreprocessor(function (option) {
+
+    echarts.util.each(option.series, function (seriesOne) {
+        echarts.util.each(preprocessors[seriesOne.type].series, function (handle) {
             handle().call(seriesOne, option);
         });
-        echarts.util.each(seriesOne.data, function(dataOne) {
-            echarts.util.each(preprocessors[seriesOne.type].data, function(handle) {
+        echarts.util.each(seriesOne.data, function (dataOne) {
+            echarts.util.each(preprocessors[seriesOne.type].data, function (handle) {
+                handle().call(dataOne, seriesOne.data);
+            });
+        });
+
+    })
+});
+
+function getProcessorByKey(key, map) {
+    var isContextialKey = -1 !== key.indexOf('.') ? 1 : 0,
+        processor;
+    if (isContextialKey) {
+        var [chartType, level, prop, ...rest] = key.split('.'),
+            processor = {
+                chartType: chartType,
+                level: level,
+                handle: function (value) {
+                    return function (option) {
+                        if (util.isObject(value)) {
+                            util.extend(this, value, true);
+                        } else {
+                            this[prop] = value;
+                        }
+
+                    }
+                }
+            }
+    } else {
+        processor = map[key];
+    }
+    return processor;
+}
+
+function _registerProcessor(key, value) {
+
+    let processor = getProcessorByKey(key, processorsMap);
+    
+    processors[processor.chartType][processor.level].push(processor.handle.bind(null, value));
+}
+
+echarts.registerProcessor(function (ecModel, api) {
+    var dom = api.getDom(),instance = echarts.getInstanceByDom(dom);
+    echarts.util.each(processors['*']['option'],function(handle){
+        handle().call(instance,ecModel, api);
+    });
+    echarts.util.each(ecModel.option.series, function (seriesOne) {
+        echarts.util.each(processors[seriesOne.type].series, function (handle) {
+            handle().call(seriesOne, ecModel.option);
+        });
+        echarts.util.each(seriesOne.data, function (dataOne) {
+            echarts.util.each(processors[seriesOne.type].data, function (handle) {
                 handle().call(dataOne, seriesOne.data);
             });
         });
@@ -115,8 +168,8 @@ var postProcessors = [],
 function _registerPostprocessor(key, value) {
     postProcessors.push(postprocessorMap[key].bind(null, value))
 }
-echarts.registerPostUpdate(function(model, api) {
-    util.each(postProcessors, function(handle) {
+echarts.registerPostUpdate(function (model, api) {
+    util.each(postProcessors, function (handle) {
         handle()(model, api);
     })
 
@@ -124,69 +177,48 @@ echarts.registerPostUpdate(function(model, api) {
 
 function _registerPreprocessor(key, value) {
 
-    var isContextialKey = -1 !== key.indexOf('.') ? 1 : 0,
-        preprocessor;
-    if (isContextialKey) {
-        var [chartType,level,prop,...rest] = key.split('.'),
-        preprocessor = {
-            chartType: chartType,
-            level: level,
-            handle: function(value) {
-                return function(option) {
-                    if(util.isObject(value)){
-                        util.extend(this,value,true);
-                    }else{
-                        this[prop] = value;
-                    }
-                    
-                }
-            }
-        }
-    } else {
-        preprocessor = preprocessorsMap[key];
-    }
-
+    let preprocessor = getProcessorByKey(key, preprocessorsMap);
     preprocessors[preprocessor.chartType][preprocessor.level].push(preprocessor.handle.bind(null, value));
 }
 var renderAfterActionsMap = {
-        dataZoomFitWidth: function(applyConditionFunc) {
-            var userConditionTrue = typeof applyConditionFunc === 'undefined';
-            return function(dom, orginalOption) {
+    dataZoomFitWidth: function (applyConditionFunc) {
+        var userConditionTrue = typeof applyConditionFunc === 'undefined';
+        return function (dom, orginalOption) {
 
-                var ec_option = this.getOption(),
-                    option = {
-                        dataZoom: util.extend([], ec_option.dataZoom)
-                    };
+            var ec_option = this.getOption(),
+                option = {
+                    dataZoom: util.extend([], ec_option.dataZoom)
+                };
 
-                if ((userConditionTrue || applyConditionFunc.call(this, dom, orginalOption)) && ec_option.series.length > 0 && ec_option.series[0].type == 'bar' && ec_option.series[0].data.length) {
+            if ((userConditionTrue || applyConditionFunc.call(this, dom, orginalOption)) && ec_option.series.length > 0 && ec_option.series[0].type == 'bar' && ec_option.series[0].data.length) {
 
-                    var seriesComponent = this.getModel().getSeriesByIndex(0),
-                        strWidth = ec_option.xAxis[0].data.join('').length * ec_option.xAxis[0].axisLabel.fontSize,
-                        width = seriesComponent.coordinateSystem.grid._rect.width,
-                        start = 0,
-                        end = 100;
+                var seriesComponent = this.getModel().getSeriesByIndex(0),
+                    strWidth = ec_option.xAxis[0].data.join('').length * ec_option.xAxis[0].axisLabel.fontSize,
+                    width = seriesComponent.coordinateSystem.grid._rect.width,
+                    start = 0,
+                    end = 100;
 
-                    if (strWidth > width) {
-                        end = width / strWidth * 100;
+                if (strWidth > width) {
+                    end = width / strWidth * 100;
 
-                    }
-
-                    for (var dataZoomI = 0; dataZoomI < ec_option.dataZoom.length; dataZoomI++) {
-                        option.dataZoom[dataZoomI].start = start;
-                        option.dataZoom[dataZoomI].end = end;
-                    }
-                    this.setOption(option);
                 }
+
+                for (var dataZoomI = 0; dataZoomI < ec_option.dataZoom.length; dataZoomI++) {
+                    option.dataZoom[dataZoomI].start = start;
+                    option.dataZoom[dataZoomI].end = end;
+                }
+                this.setOption(option);
             }
         }
-    },
+    }
+},
     renderAfterActions = [];
 util.extend(echartsSoap, {
-
-    render: function(id, option) { //避免初始化多次 http://echarts.baidu.com/api.html#echarts.init 创建一个 ECharts 实例，返回 echartsInstance，不能在单个容器上初始化多个 ECharts 实例。
+    
+    render: function (id, option) { //避免初始化多次 http://echarts.baidu.com/api.html#echarts.init 创建一个 ECharts 实例，返回 echartsInstance，不能在单个容器上初始化多个 ECharts 实例。
         let dom = document.getElementById(id),
             instance = echarts.getInstanceByDom(dom),
-            args = Array.prototype.slice.apply(global, arguments, 1).splice(0,0,dom),
+            args = Array.prototype.slice.apply(global, arguments, 1).splice(0, 0, dom),
             init = Function.prototype.bind.apply(echarts.init, args);
 
         if (typeof instance == 'undefined') {
@@ -198,56 +230,40 @@ util.extend(echartsSoap, {
             instance = init(dom); //echarts '3.3.2' 地图instance.setOption(option, true);后指向地图某个区域左侧Visualmap还是初始时的这个区域的值，这里销毁instance重新init.
             instance.setOption(option);
         }
-        util.each(renderAfterActions, function(handle) {
+        util.each(renderAfterActions, function (handle) {
             handle().call(instance, dom, option);
         })
     },
-    registerRenderAfter: function(key, value) {
+    registerRenderAfter: function (key, value) {
         renderAfterActions.push(renderAfterActionsMap[key].bind(null, value));
     },
-    registerPreprocessor: function(key, value) {
+    registerPreprocessor: function (key, value) {
         _registerPreprocessor(key, value);
     },
-    registerPostprocessor: function(key, value) {
+    registerProcessor: function (key, value) {
+        _registerProcessor(key, value);
+    },
+    registerPostprocessor: function (key, value) {
         _registerPostprocessor(key, value);
     },
-    extendPreprocessorsMap:function(obj){
-        util.extend(extendPreprocessorsMap,obj);
+    extendPreprocessorsMap: function (obj) {
+        util.extend(extendPreprocessorsMap, obj);
     },
-    traverse:function(option,key,value){
-        var isContextialKey = -1 !== key.indexOf('.') ? 1 : 0,
-        processor;
-        if (isContextialKey) {
-            var [chartType,level,prop,...rest] = key.split('.'),
-            processor = {
-                chartType: chartType,
-                level: level,
-                handle: function(value) {
-                    return function(option) {
-                        if(util.isObject(value)){
-                            util.extend(this,value,true);
-                        }else{
-                            this[prop] = value;
-                        }
-                    }
-                }
-            }
-        } else {
-            processor = preprocessorsMap[key];
-        }
-        echarts.util.each(option.series, function(seriesOne) {
-            if(!seriesOne.type === processor.processor) return;
-            
-                if(processor.level == 'series')
+    traverse: function (option, key, value) {
+        let processor = getProcessorByKey(key, preprocessorsMap);
+        echarts.util.each(option.series, function (seriesOne) {
+            if (!seriesOne.type === processor.processor) return;
+
+            if (processor.level == 'series')
                 processor.handle(value).call(seriesOne, option);
 
-            echarts.util.each(seriesOne.data, function(dataOne) {
-                
-                if(processor.level == 'data')
-                processor.handle(value).call(dataOne, seriesOne.data);
+            echarts.util.each(seriesOne.data, function (dataOne) {
+
+                if (processor.level == 'data')
+                    processor.handle(value).call(dataOne, seriesOne.data);
 
             });
-    
+
         })
 
     }
