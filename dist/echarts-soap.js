@@ -86,9 +86,9 @@ Object.defineProperty(exports, "__esModule", {
 
 var _echarts = __webpack_require__(2);
 
-var _echarts2 = _interopRequireDefault(_echarts);
+var echarts = _interopRequireWildcard(_echarts);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
 /***! * echarts-soap
@@ -98,24 +98,56 @@ function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
  * Github Homepage: https://github.com/bung87/echarts-soap
  ***/
 
-var util = _echarts2.default.util;
+var util = echarts.util;
+function protoTypeOf(a) {
+    var b = Object.prototype.toString.call(a);
+    return b.split(" ")[1].slice(0, -1);
+}
+// function getAllChartType() {
+//     let chartTypeCtx = require.context("echarts/src/chart/", false, /.js$/),
+//         allChartTypes = chartTypeCtx.keys(),
+//         pureAllChartTypes = allChartTypes.reduce(function (arr, value) {
+//             return arr.concat(value.replace(/\.\//, "").replace(".js", ""));
+//         }, []);
+//     return pureAllChartTypes;
+// }
+var ALL_CHART_TYPE = ["bar", "boxplot", "candlestick", "chord", "custom", "effectScatter", "funnel", "gauge", "graph", "heatmap", "line", "lines", "map", "parallel", "pictorialBar", "pie", "radar", "sankey", "scatter", "themeRiver", "tree", "treemap"];
+
+function processorFactor() {
+    var result = {
+        '*': {
+            option: []
+        }
+    };
+    ALL_CHART_TYPE.forEach(function (v, i) {
+        return result[v] = {
+            series: [],
+            data: []
+        };
+    });
+    return result;
+}
+
+function safeExtend(target, value) {
+    if (!target) {
+        var t = protoTypeOf(value);
+        switch (t) {
+            case "Object":
+                target = {};
+                break;
+            case 'Array':
+                target = [];
+            default:
+                break;
+
+        }
+    }
+    util.extend(target, value, true);
+};
 
 var echartsSoap = {},
-    preprocessors = {
-    '*': {
-        option: []
-    },
-    bar: {
-        // option: [],
-        series: [],
-        data: []
-    },
-    pie: {
-        series: [],
-        data: []
-    }
-},
-    processors = Object.assign({}, preprocessors),
+    preprocessors = processorFactor(),
+    processors = processorFactor(),
     processorsMap = {},
     preprocessorsMap = {
     'innerPieLabelMinPercent': {
@@ -126,11 +158,11 @@ var echartsSoap = {},
 
                 if (this.label.normal.position = 'inner' || this.label.normal.position == 'inside') {
 
-                    var amount = _echarts2.default.util.reduce(this.data, function (sum, item) {
+                    var amount = echarts.util.reduce(this.data, function (sum, item) {
                         return sum + item.value;
                     }, 0);
 
-                    _echarts2.default.util.each(this.data, function (item) {
+                    echarts.util.each(this.data, function (item) {
 
                         safeNestedObjectInspection(item, 'label.normal.show', item.value / amount > parseFloat(value) / 100);
                     });
@@ -183,14 +215,13 @@ var echartsSoap = {},
     }
 };
 
-_echarts2.default.registerPreprocessor(function (option) {
-
-    _echarts2.default.util.each(option.series, function (seriesOne) {
-        _echarts2.default.util.each(preprocessors[seriesOne.type].series, function (handle) {
+echarts.registerPreprocessor(function (option) {
+    echarts.util.each(option.series, function (seriesOne) {
+        echarts.util.each(preprocessors[seriesOne.type].series, function (handle) {
             handle().call(seriesOne, option);
         });
-        _echarts2.default.util.each(seriesOne.data, function (dataOne) {
-            _echarts2.default.util.each(preprocessors[seriesOne.type].data, function (handle) {
+        echarts.util.each(seriesOne.data, function (dataOne) {
+            echarts.util.each(preprocessors[seriesOne.type].data, function (handle) {
                 handle().call(dataOne, seriesOne.data);
             });
         });
@@ -213,7 +244,7 @@ function getProcessorByKey(key, map) {
             handle: function handle(value) {
                 return function (option) {
                     if (util.isObject(value)) {
-                        util.extend(this, value, true);
+                        safeExtend(this[prop], value, true);
                     } else {
                         this[prop] = value;
                     }
@@ -233,21 +264,25 @@ function _registerProcessor(key, value) {
     processors[processor.chartType][processor.level].push(processor.handle.bind(null, value));
 }
 
-_echarts2.default.registerProcessor(function (ecModel, api) {
+echarts.registerProcessor(function (ecModel, api) {
     var dom = api.getDom(),
-        instance = _echarts2.default.getInstanceByDom(dom);
-    _echarts2.default.util.each(processors['*']['option'], function (handle) {
+        instance = echarts.getInstanceByDom(dom);
+    echarts.util.each(processors['*']['option'], function (handle) {
         handle().call(instance, ecModel, api);
     });
-    _echarts2.default.util.each(ecModel.option.series, function (seriesOne) {
-        _echarts2.default.util.each(processors[seriesOne.type].series, function (handle) {
-            handle().call(seriesOne, ecModel.option);
-        });
-        _echarts2.default.util.each(seriesOne.data, function (dataOne) {
-            _echarts2.default.util.each(processors[seriesOne.type].data, function (handle) {
-                handle().call(dataOne, seriesOne.data);
+    echarts.util.each(ecModel.option.series, function (seriesOne) {
+        if (!!processors[seriesOne.type]) {
+            echarts.util.each(processors[seriesOne.type].series, function (handle) {
+                handle().call(seriesOne, ecModel.option);
             });
-        });
+        }
+        if (!!processors[seriesOne.type]) {
+            echarts.util.each(seriesOne.data, function (dataOne) {
+                echarts.util.each(processors[seriesOne.type].data, function (handle) {
+                    handle().call(dataOne, seriesOne.data);
+                });
+            });
+        }
     });
 });
 
@@ -257,7 +292,7 @@ var postProcessors = [],
 function _registerPostprocessor(key, value) {
     postProcessors.push(postprocessorMap[key].bind(null, value));
 }
-_echarts2.default.registerPostUpdate(function (model, api) {
+echarts.registerPostUpdate(function (model, api) {
     util.each(postProcessors, function (handle) {
         handle()(model, api);
     });
@@ -305,15 +340,15 @@ util.extend(echartsSoap, {
     render: function render(id, option) {
         //避免初始化多次 http://echarts.baidu.com/api.html#echarts.init 创建一个 ECharts 实例，返回 echartsInstance，不能在单个容器上初始化多个 ECharts 实例。
         var dom = document.getElementById(id),
-            instance = _echarts2.default.getInstanceByDom(dom),
+            instance = echarts.getInstanceByDom(dom),
             args = Array.prototype.slice.apply(global, arguments, 1).splice(0, 0, dom),
-            init = Function.prototype.bind.apply(_echarts2.default.init, args);
+            init = Function.prototype.bind.apply(echarts.init, args);
 
         if (typeof instance == 'undefined') {
             instance = init(dom);
             instance.setOption(option);
         } else {
-            _echarts2.default.dispose(instance);
+            echarts.dispose(instance);
 
             instance = init(dom); //echarts '3.3.2' 地图instance.setOption(option, true);后指向地图某个区域左侧Visualmap还是初始时的这个区域的值，这里销毁instance重新init.
             instance.setOption(option);
@@ -349,12 +384,16 @@ util.extend(echartsSoap, {
     }),
     traverse: function traverse(option, key, value) {
         var processor = getProcessorByKey(key, preprocessorsMap);
-        _echarts2.default.util.each(option.series, function (seriesOne) {
+        if (processor.level === 'option') {
+            processor.handle(value).call(option, option);
+            return;
+        }
+        echarts.util.each(option.series, function (seriesOne) {
             if (!seriesOne.type === processor.processor) return;
 
             if (processor.level == 'series') processor.handle(value).call(seriesOne, option);
 
-            _echarts2.default.util.each(seriesOne.data, function (dataOne) {
+            echarts.util.each(seriesOne.data, function (dataOne) {
 
                 if (processor.level == 'data') processor.handle(value).call(dataOne, seriesOne.data);
             });
@@ -375,7 +414,7 @@ function safeNestedObjectInspection(obj, path, value) {
             curr = void 0;
         for (var index = 0; index < len; index++) {
             var _key = arr[index];
-            currPath.push('[\'{$key}\']');
+            currPath.push("['{$key}']");
             curr = obj[_key];
 
             if (index < last) {
@@ -392,7 +431,7 @@ function safeNestedObjectInspection(obj, path, value) {
         }
     }
 }
-exports.default = echartsSoap = echartsSoap;
+exports.default = echartsSoap;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ }),
