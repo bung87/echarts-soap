@@ -6,26 +6,57 @@
  * Github Homepage: https://github.com/bung87/echarts-soap
  ***/
 
-import echarts from 'echarts';
+import * as echarts from 'echarts';
 
 const util = echarts.util;
+function protoTypeOf(a) {
+    var b = Object.prototype.toString.call(a);
+    return b.split(" ")[1].slice(0, -1);
+}
+// function getAllChartType() {
+//     let chartTypeCtx = require.context("echarts/src/chart/", false, /.js$/),
+//         allChartTypes = chartTypeCtx.keys(),
+//         pureAllChartTypes = allChartTypes.reduce(function (arr, value) {
+//             return arr.concat(value.replace(/\.\//, "").replace(".js", ""));
+//         }, []);
+//     return pureAllChartTypes;
+// }
+const ALL_CHART_TYPE = ["bar", "boxplot", "candlestick", "chord", "custom", "effectScatter", "funnel", "gauge", "graph", "heatmap", "line", "lines", "map", "parallel", "pictorialBar", "pie", "radar", "sankey", "scatter", "themeRiver", "tree", "treemap"];
+
+function processorFactor() {
+    let result = {
+        '*': {
+            option: []
+        }
+    };
+    ALL_CHART_TYPE.forEach((v, i) => result[v] = {
+        series: [],
+        data: []
+    })
+    return result;
+
+}
+
+function safeExtend(target, value) {
+    if (!target) {
+        let t = protoTypeOf(value);
+        switch (t) {
+            case "Object":
+                target = {};
+                break;
+            case 'Array':
+                target = [];
+            default:
+                break;
+
+        }
+    }
+    util.extend(target, value, true);
+};
 
 var echartsSoap = {},
-    preprocessors = {
-        '*':{
-            option:[]
-        },
-        bar: {
-            // option: [],
-            series: [],
-            data: []
-        },
-        pie: {
-            series: [],
-            data: []
-        },
-    },
-    processors = Object.assign({}, preprocessors),
+    preprocessors = processorFactor(),
+    processors = processorFactor(),
     processorsMap = {
     },
     preprocessorsMap = {
@@ -98,7 +129,6 @@ var echartsSoap = {},
     };
 
 echarts.registerPreprocessor(function (option) {
-
     echarts.util.each(option.series, function (seriesOne) {
         echarts.util.each(preprocessors[seriesOne.type].series, function (handle) {
             handle().call(seriesOne, option);
@@ -123,7 +153,7 @@ function getProcessorByKey(key, map) {
                 handle: function (value) {
                     return function (option) {
                         if (util.isObject(value)) {
-                            util.extend(this, value, true);
+                            safeExtend(this[prop], value, true);
                         } else {
                             this[prop] = value;
                         }
@@ -140,24 +170,29 @@ function getProcessorByKey(key, map) {
 function _registerProcessor(key, value) {
 
     let processor = getProcessorByKey(key, processorsMap);
-    
+
     processors[processor.chartType][processor.level].push(processor.handle.bind(null, value));
 }
 
 echarts.registerProcessor(function (ecModel, api) {
-    var dom = api.getDom(),instance = echarts.getInstanceByDom(dom);
-    echarts.util.each(processors['*']['option'],function(handle){
-        handle().call(instance,ecModel, api);
+    var dom = api.getDom(), instance = echarts.getInstanceByDom(dom);
+    echarts.util.each(processors['*']['option'], function (handle) {
+        handle().call(instance, ecModel, api);
     });
     echarts.util.each(ecModel.option.series, function (seriesOne) {
-        echarts.util.each(processors[seriesOne.type].series, function (handle) {
-            handle().call(seriesOne, ecModel.option);
-        });
-        echarts.util.each(seriesOne.data, function (dataOne) {
-            echarts.util.each(processors[seriesOne.type].data, function (handle) {
-                handle().call(dataOne, seriesOne.data);
+        if (!!processors[seriesOne.type]) {
+            echarts.util.each(processors[seriesOne.type].series, function (handle) {
+                handle().call(seriesOne, ecModel.option);
             });
-        });
+        }
+        if (!!processors[seriesOne.type]) {
+            echarts.util.each(seriesOne.data, function (dataOne) {
+                echarts.util.each(processors[seriesOne.type].data, function (handle) {
+                    handle().call(dataOne, seriesOne.data);
+                });
+            });
+        }
+
 
     })
 });
@@ -212,9 +247,9 @@ var renderAfterActionsMap = {
         }
     }
 },
-    renderAfterActions = [];
+renderAfterActions = [];
 util.extend(echartsSoap, {
-    
+
     render: function (id, option) { //避免初始化多次 http://echarts.baidu.com/api.html#echarts.init 创建一个 ECharts 实例，返回 echartsInstance，不能在单个容器上初始化多个 ECharts 实例。
         let dom = document.getElementById(id),
             instance = echarts.getInstanceByDom(dom),
@@ -251,6 +286,10 @@ util.extend(echartsSoap, {
     },
     traverse: function (option, key, value) {
         let processor = getProcessorByKey(key, preprocessorsMap);
+        if (processor.level === 'option') {
+            processor.handle(value).call(option, option);
+            return;
+        }
         echarts.util.each(option.series, function (seriesOne) {
             if (!seriesOne.type === processor.processor) return;
 
@@ -299,4 +338,4 @@ function safeNestedObjectInspection(obj, path, value) {
         }
     }
 }
-export default echartsSoap = echartsSoap;
+export default echartsSoap;
